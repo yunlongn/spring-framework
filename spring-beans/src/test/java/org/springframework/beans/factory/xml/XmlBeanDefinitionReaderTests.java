@@ -137,7 +137,8 @@ public class XmlBeanDefinitionReaderTests {
 
 		Resource resource = new ClassPathResource(resourceName, getClass());
 		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
-		new XmlBeanDefinitionReader(factory).loadBeanDefinitions(resource);
+		int total = new XmlBeanDefinitionReader(factory).loadBeanDefinitions(resource);
+		System.out.println("加载bean数量 total="+total);
 		TestBean bean = (TestBean) factory.getBean("testBean");
 		assertThat(bean).isNotNull();
 	}
