@@ -134,8 +134,9 @@ public class XmlBeanDefinitionReaderTests {
 	}
 
 	private void doTestValidation(String resourceName) {
-		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+
 		Resource resource = new ClassPathResource(resourceName, getClass());
+		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
 		new XmlBeanDefinitionReader(factory).loadBeanDefinitions(resource);
 		TestBean bean = (TestBean) factory.getBean("testBean");
 		assertThat(bean).isNotNull();

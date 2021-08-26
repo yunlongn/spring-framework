@@ -60,6 +60,7 @@ public class PluggableSchemaResolver implements EntityResolver {
 	/**
 	 * The location of the file that defines schema mappings.
 	 * Can be present in multiple JAR files.
+	 * 默认 {@link #schemaMappingsLocation} 地址
 	 */
 	public static final String DEFAULT_SCHEMA_MAPPINGS_LOCATION = "META-INF/spring.schemas";
 
@@ -68,12 +69,14 @@ public class PluggableSchemaResolver implements EntityResolver {
 
 	@Nullable
 	private final ClassLoader classLoader;
-
+	/**
+	 * Schema 文件地址
+	 */
 	private final String schemaMappingsLocation;
 
 	/** Stores the mapping of schema URL -> local schema path. */
 	@Nullable
-	private volatile Map<String, String> schemaMappings;
+	private volatile Map<String, String> schemaMappings; // namespaceURI 与 Schema 文件地址的映射集合
 
 
 	/**

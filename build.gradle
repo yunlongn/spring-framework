@@ -277,7 +277,7 @@ configure(allprojects) { project ->
 			cacheChangingModulesFor 0, "seconds"
 		}
 		repositories {
-			mavenCentral()
+			maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
 			maven { url "https://repo.spring.io/libs-spring-framework-build" }
 		}
 	}
@@ -315,7 +315,6 @@ configure([rootProject] + javaProjects) { project ->
 			}
 		}
 	}
-
 	test {
 		useJUnitPlatform()
 		include(["**/*Tests.class", "**/*Test.class"])
