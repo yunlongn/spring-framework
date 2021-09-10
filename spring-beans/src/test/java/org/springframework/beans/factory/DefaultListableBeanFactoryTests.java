@@ -1207,6 +1207,8 @@ class DefaultListableBeanFactoryTests {
 
 	@Test
 	void arrayPropertyWithOptionalAutowiring() throws MalformedURLException {
+		lbf.registerSingleton("resource1", new UrlResource("http://localhost:8080"));
+		lbf.registerSingleton("resource2", new UrlResource("http://localhost:9090"));
 		RootBeanDefinition rbd = new RootBeanDefinition(ArrayBean.class);
 		rbd.setAutowireMode(RootBeanDefinition.AUTOWIRE_BY_TYPE);
 		lbf.registerBeanDefinition("arrayBean", rbd);

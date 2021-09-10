@@ -469,8 +469,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 		do {
 			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
-
+			// 循环 targetClass 的所有 field 并执 FieldCallback 逻辑
 			ReflectionUtils.doWithLocalFields(targetClass, field -> {
+				// 获得字段上面的 Annotation 注解
 				MergedAnnotation<?> ann = findAutowiredAnnotation(field);
 				if (ann != null) {
 					if (Modifier.isStatic(field.getModifiers())) {
@@ -479,11 +480,13 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						}
 						return;
 					}
+					// 注解是否为必须依赖项
 					boolean required = determineRequiredStatus(ann);
 					currElements.add(new AutowiredFieldElement(field, required));
 				}
 			});
 
+			// 循环 targetClass 的所有 Method 并执 FieldCallback 逻辑
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
 				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
@@ -520,6 +523,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	@Nullable
 	private MergedAnnotation<?> findAutowiredAnnotation(AccessibleObject ao) {
 		MergedAnnotations annotations = MergedAnnotations.from(ao);
+		// 循环注解上的参数
 		for (Class<? extends Annotation> type : this.autowiredAnnotationTypes) {
 			MergedAnnotation<?> annotation = annotations.get(type);
 			if (annotation.isPresent()) {
@@ -530,10 +534,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	}
 
 	/**
-	 * Determine if the annotated field or method requires its dependency.
-	 * <p>A 'required' dependency means that autowiring should fail when no beans
-	 * are found. Otherwise, the autowiring process will simply bypass the field
-	 * or method when no beans are found.
+	 * 确定带注释的字段或方法是否需要其依赖项。
+	 * <p>“必需”依赖项意味着在找不到 bean 时自动装配应该失败。否则，当没有找到 bean 时，
+	 * 自动装配过程将简单地绕过字段或方法。
 	 * @param ann the Autowired annotation
 	 * @return whether the annotation indicates that a dependency is required
 	 */

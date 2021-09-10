@@ -110,14 +110,17 @@ public class LookupAnnotationTests {
 
 	@Test  // gh-25806
 	public void testWithNullBean() {
-		RootBeanDefinition tbd = new RootBeanDefinition(TestBean.class, () -> null);
+		RootBeanDefinition tbd = new RootBeanDefinition(TestBean.class, () -> {
+			int o = 1;
+			return new TestBean("create" + o);
+		});
 		tbd.setScope(BeanDefinition.SCOPE_PROTOTYPE);
 		beanFactory.registerBeanDefinition("testBean", tbd);
 
 		AbstractBean bean = beanFactory.getBean("beanConsumer", BeanConsumer.class).abstractBean;
 		assertThat(bean).isNotNull();
-		Object expected = bean.get();
-		assertThat(expected).isNull();
+		TestBean expected = bean.get();
+		assertThat(expected.getName()).isEqualTo("create1");
 		assertThat(beanFactory.getBean(BeanConsumer.class).abstractBean).isSameAs(bean);
 	}
 

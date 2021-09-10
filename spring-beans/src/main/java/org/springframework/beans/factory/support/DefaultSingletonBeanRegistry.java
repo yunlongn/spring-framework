@@ -104,11 +104,14 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	/** Set of registered singletons, containing the bean names in registration order. */
 	private final Set<String> registeredSingletons = new LinkedHashSet<>(256);
 
-	/** Names of beans that are currently in creation. */
+	/** 正在创建中的单例 Bean 的名字的集合. */
 	private final Set<String> singletonsCurrentlyInCreation =
 			Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
-	/** Names of beans currently excluded from in creation checks. */
+	/**
+	 * Names of beans currently excluded from in creation checks
+	 * 这两方法是非常重要的操作，因为他们记录着 Bean 的加载状态，是检测当前 Bean 是否处于创建中的关键之处，对解决 Bean 循环依赖起着关键作用
+	 * . */
 	private final Set<String> inCreationCheckExclusions =
 			Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
@@ -287,8 +290,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					if (recordSuppressedExceptions) {
 						this.suppressedExceptions = null;
 					}
+					// <4> 后置处理 将处于创建中的 beanName 在创建过程中的集合中移除
 					afterSingletonCreation(beanName);
 				}
+				// <5> 加入缓存中
 				if (newSingleton) {
 					addSingleton(beanName, singletonObject);
 				}
