@@ -113,6 +113,7 @@ public class SpringValidatorAdapter implements SmartValidator, javax.validation.
 	@Override
 	public void validate(Object target, Errors errors, Object... validationHints) {
 		if (this.targetValidator != null) {
+			// 处理并添加错误 this.targetValidator.validate 获取有多少个错误
 			processConstraintViolations(
 					this.targetValidator.validate(target, asValidationGroups(validationHints)), errors);
 		}

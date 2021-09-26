@@ -113,6 +113,9 @@ import org.springframework.util.ReflectionUtils;
 public class SpringServletContainerInitializer implements ServletContainerInitializer {
 
 	/**
+	 * 当使用内嵌的 Tomcat 时，你会发现 Spring Boot 完全走了另一套初始化流程，完全没有使用前面提到的 SpringServletContainerInitializer ，
+	 * 实际上一开始我在各种 ServletContainerInitializer 的实现类中打了断点，最终定位到，根本没有运行到 SpringServletContainerInitializer 内部，
+	 * 而是进入了 org.springframework.boot.web.embedded.tomcat.TomcatStarter 这个类中。
 	 * Delegate the {@code ServletContext} to any {@link WebApplicationInitializer}
 	 * implementations present on the application classpath.
 	 * <p>Because this class declares @{@code HandlesTypes(WebApplicationInitializer.class)},
@@ -148,6 +151,9 @@ public class SpringServletContainerInitializer implements ServletContainerInitia
 			for (Class<?> waiClass : webAppInitializerClasses) {
 				// Be defensive: Some servlet containers provide us with invalid classes,
 				// no matter what @HandlesTypes says...
+				// 英文注释是 spring 源码中自带的，它提示我们由于 servlet 厂商实现的差异，onStartup 方法会加载我们本不想处理的 class，
+				// 所以进行了特判。另外，也要注意下 @HandlesTypes(WebApplicationInitializer.class) 注解，
+				// 如果厂商正确的实现 @HandlesTypes 的逻辑，传入的 Set<Class<?>> webAppInitializerClasses 都是 WebApplicationInitializer 对象。
 				if (!waiClass.isInterface() && !Modifier.isAbstract(waiClass.getModifiers()) &&
 						WebApplicationInitializer.class.isAssignableFrom(waiClass)) {
 					try {
@@ -168,6 +174,9 @@ public class SpringServletContainerInitializer implements ServletContainerInitia
 
 		servletContext.log(initializers.size() + " Spring WebApplicationInitializers detected on classpath");
 		AnnotationAwareOrderComparator.sort(initializers);
+		// spring 与我们之前的 demo 不同，并没有在 SpringServletContainerInitializer 中直接对 servlet 和 filter 进行注册，
+		// 而是委托给了一个陌生的类 org.springframework.web.WebApplicationInitializer 。
+		// WebApplicationInitializer 类便是 spring 用来初始化 web 环境的委托者类，它通常有三个实现类：
 		for (WebApplicationInitializer initializer : initializers) {
 			initializer.onStartup(servletContext);
 		}

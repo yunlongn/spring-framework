@@ -48,21 +48,39 @@ public class SimpleMappingExceptionResolver extends AbstractHandlerExceptionReso
 	/** The default name of the exception attribute: "exception". */
 	public static final String DEFAULT_EXCEPTION_ATTRIBUTE = "exception";
 
-
+	/**
+	 * 异常的视图映射
+	 *
+	 * KEY：异常的全类名
+	 * VALUE：视图名
+	 */
 	@Nullable
 	private Properties exceptionMappings;
-
+	/**
+	 * 排除的异常的数组
+	 */
 	@Nullable
 	private Class<?>[] excludedExceptions;
-
+	/**
+	 * 默认视图名
+	 */
 	@Nullable
 	private String defaultErrorView;
-
+	/**
+	 * 默认的状态码
+	 */
 	@Nullable
 	private Integer defaultStatusCode;
-
+	/**
+	 * 状态码的映射
+	 *
+	 * KEY：视图名
+	 * VALUE：状态码
+	 */
 	private Map<String, Integer> statusCodes = new HashMap<>();
-
+	/**
+	 * 异常设置到 {@link ModelAndView} 的属性名
+	 */
 	@Nullable
 	private String exceptionAttribute = DEFAULT_EXCEPTION_ATTRIBUTE;
 

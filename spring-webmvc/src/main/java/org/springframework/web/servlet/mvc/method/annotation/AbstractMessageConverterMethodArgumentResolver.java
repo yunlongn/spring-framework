@@ -150,6 +150,7 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 	}
 
 	/**
+	 * 值写入。的消息转换类序列化数据到 controller 里面
 	 * Create the method argument value of the expected parameter type by reading
 	 * from the given HttpInputMessage.
 	 * @param <T> the expected type of the argument value to be created
@@ -200,10 +201,12 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 				if (genericConverter != null ? genericConverter.canRead(targetType, contextClass, contentType) :
 						(targetClass != null && converter.canRead(targetClass, contentType))) {
 					if (message.hasBody()) {
+						// 前置通知 修改返回值 @RequestBodyAdvice 给到转换类之前的数据修改
 						HttpInputMessage msgToUse =
 								getAdvice().beforeBodyRead(message, parameter, targetType, converterType);
 						body = (genericConverter != null ? genericConverter.read(targetType, contextClass, msgToUse) :
 								((HttpMessageConverter<T>) converter).read(targetClass, msgToUse));
+						// 后置通知 修改返回值 @RequestBodyAdvice 转换类的后置修改
 						body = getAdvice().afterBodyRead(body, msgToUse, parameter, targetType, converterType);
 					}
 					else {

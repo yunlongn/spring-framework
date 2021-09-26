@@ -87,6 +87,8 @@ public class SessionLocaleResolver extends AbstractLocaleContextResolver {
 
 
 	/**
+	 *  在 HttpSession 中指定相应属性的名称，保存当前的 Locale 值
+	 *  默认值为 LOCALE_SESSION_ATTRIBUTE_NAME
 	 * Specify the name of the corresponding attribute in the {@code HttpSession},
 	 * holding the current {@link Locale} value.
 	 * <p>The default is an internal {@link #LOCALE_SESSION_ATTRIBUTE_NAME}.
@@ -97,6 +99,8 @@ public class SessionLocaleResolver extends AbstractLocaleContextResolver {
 	}
 
 	/**
+	 * 在 HttpSession 中指定相应属性的名称，保存当前的 TimeZone 值
+	 * 默认值为 TIME_ZONE_SESSION_ATTRIBUTE_NAME
 	 * Specify the name of the corresponding attribute in the {@code HttpSession},
 	 * holding the current {@link TimeZone} value.
 	 * <p>The default is an internal {@link #TIME_ZONE_SESSION_ATTRIBUTE_NAME}.
@@ -157,6 +161,8 @@ public class SessionLocaleResolver extends AbstractLocaleContextResolver {
 
 
 	/**
+	 * 确定给定请求的默认语言环境，如果没有找到 Locale 会话属性，则调用
+	 * 默认实现返回指定的默认语言环境（如果有的话）返回到请求的Accept-Header 语言环境
 	 * Determine the default locale for the given request,
 	 * Called if no Locale session attribute has been found.
 	 * <p>The default implementation returns the specified default locale,
@@ -175,6 +181,8 @@ public class SessionLocaleResolver extends AbstractLocaleContextResolver {
 	}
 
 	/**
+	 * 确定给定请求的默认时区，如果未找到TimeZone会话属性，则调用
+	 * 默认实现返回指定的默认时区（如果有），否则返回null
 	 * Determine the default time zone for the given request,
 	 * Called if no TimeZone session attribute has been found.
 	 * <p>The default implementation returns the specified default time zone,

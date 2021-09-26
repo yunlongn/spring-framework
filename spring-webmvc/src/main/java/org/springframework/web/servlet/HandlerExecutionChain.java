@@ -40,15 +40,27 @@ import org.springframework.util.ObjectUtils;
 public class HandlerExecutionChain {
 
 	private static final Log logger = LogFactory.getLog(HandlerExecutionChain.class);
-
+	/**
+	 * 处理器
+	 */
 	private final Object handler;
-
+	/**
+	 * 拦截器数组
+	 */
 	@Nullable
 	private HandlerInterceptor[] interceptors;
-
+	/**
+	 * 拦截器数组。
+	 *
+	 * 在实际使用时，会调用 {@link #getInterceptors()} 方法，初始化到 {@link #interceptors} 中
+	 */
 	@Nullable
 	private List<HandlerInterceptor> interceptorList;
-
+	/**
+	 * 已执行 {@link HandlerInterceptor#preHandle(HttpServletRequest, HttpServletResponse, Object)} 的位置
+	 *
+	 * 主要用于实现 {@link #applyPostHandle(HttpServletRequest, HttpServletResponse, ModelAndView)} 的逻辑
+	 */
 	private int interceptorIndex = -1;
 
 
@@ -70,6 +82,7 @@ public class HandlerExecutionChain {
 		if (handler instanceof HandlerExecutionChain) {
 			HandlerExecutionChain originalChain = (HandlerExecutionChain) handler;
 			this.handler = originalChain.getHandler();
+			// 初始化到 interceptorList 中
 			this.interceptorList = new ArrayList<>();
 			CollectionUtils.mergeArrayIntoCollection(originalChain.getInterceptors(), this.interceptorList);
 			CollectionUtils.mergeArrayIntoCollection(interceptors, this.interceptorList);
@@ -113,14 +126,18 @@ public class HandlerExecutionChain {
 	}
 
 	private List<HandlerInterceptor> initInterceptorList() {
+		// 如果 interceptorList 为空，则初始化为 ArrayList
 		if (this.interceptorList == null) {
 			this.interceptorList = new ArrayList<>();
+			// 如果 interceptors 非空，则添加到 interceptorList 中
 			if (this.interceptors != null) {
 				// An interceptor array specified through the constructor
 				CollectionUtils.mergeArrayIntoCollection(this.interceptors, this.interceptorList);
 			}
 		}
+		// 置空 interceptors
 		this.interceptors = null;
+		// 返回 interceptorList
 		return this.interceptorList;
 	}
 

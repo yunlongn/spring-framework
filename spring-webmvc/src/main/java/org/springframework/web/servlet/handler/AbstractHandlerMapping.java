@@ -72,16 +72,31 @@ import org.springframework.web.util.UrlPathHelper;
  */
 public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		implements HandlerMapping, Ordered, BeanNameAware {
-
+	/**
+	 * 默认处理器
+	 */
 	@Nullable
 	private Object defaultHandler;
-
+	/**
+	 * URL 路径工具类
+	 */
 	private UrlPathHelper urlPathHelper = new UrlPathHelper();
-
+	/**
+	 * 路径匹配器
+	 */
 	private PathMatcher pathMatcher = new AntPathMatcher();
 
+	/**
+	 * 配置的拦截器数组.
+	 * 在 {@link #initInterceptors()} 方法中，初始化到 {@link #adaptedInterceptors} 中
+	 * 添加方式有两种：
+	 * 1. {@link #setInterceptors(Object...)} 方法
+	 * 2. {@link #extendInterceptors(List)} 方法
+	 */
 	private final List<Object> interceptors = new ArrayList<>();
-
+	/**
+	 * 初始化后的拦截器 HandlerInterceptor 数组
+	 */
 	private final List<HandlerInterceptor> adaptedInterceptors = new ArrayList<>();
 
 	@Nullable
@@ -90,7 +105,9 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	private CorsProcessor corsProcessor = new DefaultCorsProcessor();
 
 	private int order = Ordered.LOWEST_PRECEDENCE;  // default: same as non-Ordered
-
+	/**
+	 * Bean 名字
+	 */
 	@Nullable
 	private String beanName;
 
@@ -283,8 +300,11 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 */
 	@Override
 	protected void initApplicationContext() throws BeansException {
+		// <1> 空方法。交给子类实现，用于注册自定义的拦截器到 interceptors 中。目前暂无子类实现。
 		extendInterceptors(this.interceptors);
+		// <2> 扫描已注册的 MappedInterceptor 的 Bean 们，添加到 mappedInterceptors 中
 		detectMappedInterceptors(this.adaptedInterceptors);
+		// <3> 将 interceptors 初始化成 HandlerInterceptor 类型，添加到 mappedInterceptors 中
 		initInterceptors();
 	}
 
@@ -310,6 +330,8 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 * @param mappedInterceptors an empty list to add to
 	 */
 	protected void detectMappedInterceptors(List<HandlerInterceptor> mappedInterceptors) {
+		// 扫描已注册的 MappedInterceptor 的 Bean 们，添加到 mappedInterceptors 中
+		// MappedInterceptor 会根据请求路径做匹配，是否进行拦截。
 		mappedInterceptors.addAll(BeanFactoryUtils.beansOfTypeIncludingAncestors(
 				obtainApplicationContext(), MappedInterceptor.class, true, false).values());
 	}
@@ -393,6 +415,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	@Override
 	@Nullable
 	public final HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+		// 获得处理器
 		Object handler = getHandlerInternal(request);
 		if (handler == null) {
 			handler = getDefaultHandler();
@@ -405,7 +428,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 			String handlerName = (String) handler;
 			handler = obtainApplicationContext().getBean(handlerName);
 		}
-
+		// 获得处理程序执行链，由处理程序对象和任何处理程序拦截器组成
 		HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);
 
 		if (logger.isTraceEnabled()) {

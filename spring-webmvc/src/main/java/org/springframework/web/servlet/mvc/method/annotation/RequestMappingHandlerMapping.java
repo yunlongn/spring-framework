@@ -336,6 +336,7 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 	protected RequestMappingInfo createRequestMappingInfo(
 			RequestMapping requestMapping, @Nullable RequestCondition<?> customCondition) {
 
+		// 创建 RequestMappingInfo.Builder 对象，设置对应属性
 		RequestMappingInfo.Builder builder = RequestMappingInfo
 				.paths(resolveEmbeddedValuesInPatterns(requestMapping.path()))
 				.methods(requestMapping.method())
@@ -347,6 +348,7 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 		if (customCondition != null) {
 			builder.customCondition(customCondition);
 		}
+		// 创建 RequestMappingInfo 对象
 		return builder.options(this.config).build();
 	}
 
@@ -394,13 +396,18 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 
 	@Override
 	public RequestMatchResult match(HttpServletRequest request, String pattern) {
+		// 创建 RequestMappingInfo 对象
 		RequestMappingInfo info = RequestMappingInfo.paths(pattern).options(this.config).build();
+		// 获得匹配的 RequestMappingInfo 对象
 		RequestMappingInfo matchingInfo = info.getMatchingCondition(request);
 		if (matchingInfo == null) {
 			return null;
 		}
+		// 获得请求路径的集合
 		Set<String> patterns = matchingInfo.getPatternsCondition().getPatterns();
+		// 获得请求的路径
 		String lookupPath = getUrlPathHelper().getLookupPathForRequest(request, LOOKUP_PATH);
+		// 创建 RequestMatchResult 结果
 		return new RequestMatchResult(patterns.iterator().next(), lookupPath, getPathMatcher());
 	}
 

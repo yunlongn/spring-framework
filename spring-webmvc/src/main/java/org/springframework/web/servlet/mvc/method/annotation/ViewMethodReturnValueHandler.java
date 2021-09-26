@@ -43,6 +43,7 @@ public class ViewMethodReturnValueHandler implements HandlerMethodReturnValueHan
 
 	@Override
 	public boolean supportsReturnType(MethodParameter returnType) {
+		// 返回类型为 View
 		return View.class.isAssignableFrom(returnType.getParameterType());
 	}
 

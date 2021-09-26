@@ -98,12 +98,17 @@ public class HandlerMethod {
 	public HandlerMethod(Object bean, Method method) {
 		Assert.notNull(bean, "Bean is required");
 		Assert.notNull(method, "Method is required");
+		// <1> 将 beanName 赋值给 bean 属性，说明 beanFactory + bean 的方式，获得 handler 对象
 		this.bean = bean;
 		this.beanFactory = null;
+		// <2> 初始化 beanType 属性
 		this.beanType = ClassUtils.getUserClass(bean);
+		// <3> 初始化 method、bridgedMethod 属性
 		this.method = method;
 		this.bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
+		// <4> 初始化 parameters 属性
 		this.parameters = initMethodParameters();
+		// <5> 初始化 responseStatus、responseStatusReason 属性
 		evaluateResponseStatus();
 		this.description = initDescription(this.beanType, this.method);
 	}
@@ -184,7 +189,9 @@ public class HandlerMethod {
 	}
 
 	private MethodParameter[] initMethodParameters() {
+		// 创建 MethodParameter 数组
 		int count = this.bridgedMethod.getParameterCount();
+		// 遍历 bridgedMethod 的参数，逐个解析参数类型
 		MethodParameter[] result = new MethodParameter[count];
 		for (int i = 0; i < count; i++) {
 			result[i] = new HandlerMethodParameter(i);

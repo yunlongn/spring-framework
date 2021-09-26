@@ -128,12 +128,14 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
 
 		parameter = parameter.nestedIfOptional();
+		// 获取流数据
 		Object arg = readWithMessageConverters(webRequest, parameter, parameter.getNestedGenericParameterType());
 		String name = Conventions.getVariableNameForParameter(parameter);
 
 		if (binderFactory != null) {
 			WebDataBinder binder = binderFactory.createBinder(webRequest, arg, name);
 			if (arg != null) {
+				// @Validated 或者注解是否为 Valid开头。对象内容是否校验通过
 				validateIfApplicable(binder, parameter);
 				if (binder.getBindingResult().hasErrors() && isBindExceptionRequired(binder, parameter)) {
 					throw new MethodArgumentNotValidException(parameter, binder.getBindingResult());
@@ -143,7 +145,7 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 				mavContainer.addAttribute(BindingResult.MODEL_KEY_PREFIX + name, binder.getBindingResult());
 			}
 		}
-
+		// 调整参数， 判断是否包装 Optional
 		return adaptArgumentIfNecessary(arg, parameter);
 	}
 
@@ -154,8 +156,9 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 		HttpServletRequest servletRequest = webRequest.getNativeRequest(HttpServletRequest.class);
 		Assert.state(servletRequest != null, "No HttpServletRequest");
 		ServletServerHttpRequest inputMessage = new ServletServerHttpRequest(servletRequest);
-
+		// 从消息转换类写入内容
 		Object arg = readWithMessageConverters(inputMessage, parameter, paramType);
+		// 判断有 RequestBody 注解并且值还为空则报错
 		if (arg == null && checkRequired(parameter)) {
 			throw new HttpMessageNotReadableException("Required request body is missing: " +
 					parameter.getExecutable().toGenericString(), inputMessage);
@@ -172,12 +175,15 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 	public void handleReturnValue(@Nullable Object returnValue, MethodParameter returnType,
 			ModelAndViewContainer mavContainer, NativeWebRequest webRequest)
 			throws IOException, HttpMediaTypeNotAcceptableException, HttpMessageNotWritableException {
-
+		// 声明返回不需要视图
 		mavContainer.setRequestHandled(true);
+		// 输入流
 		ServletServerHttpRequest inputMessage = createInputMessage(webRequest);
+		// 输出流
 		ServletServerHttpResponse outputMessage = createOutputMessage(webRequest);
 
 		// Try even with null return value. ResponseBodyAdvice could get involved.
+		// 使用 HttpMessageConverter 对对象进行转换，并写入到响应 将对象转换成json字符串
 		writeWithMessageConverters(returnValue, returnType, inputMessage, outputMessage);
 	}
 

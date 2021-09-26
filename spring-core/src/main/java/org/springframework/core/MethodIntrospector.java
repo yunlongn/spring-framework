@@ -59,8 +59,9 @@ public final class MethodIntrospector {
 		final Map<Method, T> methodMap = new LinkedHashMap<>();
 		Set<Class<?>> handlerTypes = new LinkedHashSet<>();
 		Class<?> specificHandlerType = null;
-
+		// 判断类是否不为代理类
 		if (!Proxy.isProxyClass(targetType)) {
+			// 返回给定类的用户定义类
 			specificHandlerType = ClassUtils.getUserClass(targetType);
 			handlerTypes.add(specificHandlerType);
 		}
@@ -68,12 +69,14 @@ public final class MethodIntrospector {
 
 		for (Class<?> currentHandlerType : handlerTypes) {
 			final Class<?> targetClass = (specificHandlerType != null ? specificHandlerType : currentHandlerType);
-
+			// 循环类里面所有的方法
 			ReflectionUtils.doWithMethods(currentHandlerType, method -> {
 				Method specificMethod = ClassUtils.getMostSpecificMethod(method, targetClass);
 				T result = metadataLookup.inspect(specificMethod);
 				if (result != null) {
+					// 判断是否有代理方法
 					Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(specificMethod);
+					// 判断代理方法就是本身
 					if (bridgedMethod == specificMethod || metadataLookup.inspect(bridgedMethod) == null) {
 						methodMap.put(specificMethod, result);
 					}

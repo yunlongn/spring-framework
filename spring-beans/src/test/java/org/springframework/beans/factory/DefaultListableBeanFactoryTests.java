@@ -1214,7 +1214,7 @@ class DefaultListableBeanFactoryTests {
 		lbf.registerBeanDefinition("arrayBean", rbd);
 		ArrayBean ab = (ArrayBean) lbf.getBean("arrayBean");
 
-		assertThat(ab.getResourceArray()).isNull();
+		assertThat(ab.getResourceArray()).isNotNull();
 	}
 
 	@Test
