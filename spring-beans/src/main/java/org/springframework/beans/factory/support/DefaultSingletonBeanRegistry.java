@@ -216,9 +216,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 						singletonObject = this.earlySingletonObjects.get(beanName);
 						if (singletonObject == null) {
 							// 从 singletonFactories 中获取对应的 ObjectFactory
+							// 循环依赖解决点 如果是工厂里面有数据。 说明已经在循环中了。 那么可以通过调用 singletonFactory.getObject
 							ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 							if (singletonFactory != null) {
-								// 获得 bean
+								// 获得 bean 这里相当与执行  `() -> getEarlyBeanReference(beanName, mbd, bean)` 获得半成品bean
 								singletonObject = singletonFactory.getObject();
 								// 添加 bean 到 earlySingletonObjects 中
 								this.earlySingletonObjects.put(beanName, singletonObject);

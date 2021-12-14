@@ -606,7 +606,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						"' to allow for resolving potential circular references");
 			}
 			// 提前将创建的 bean 实例加入到 singletonFactories 中
-			// 这里是为了后期避免循环依赖
+			// 这里是为了后期避免循环依赖 判断是否是循环引用，是的话需要添加到三级缓存中。
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
