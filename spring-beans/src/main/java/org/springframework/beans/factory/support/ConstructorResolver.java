@@ -135,9 +135,11 @@ class ConstructorResolver {
 		ArgumentsHolder argsHolderToUse = null; // 构造参数
 		Object[] argsToUse = null; // 构造参数
 
-		// 确定构造参数
+		// 最终用于实例化的构造函数参数
 		// 如果 getBean() 已经传递，则直接使用
 		if (explicitArgs != null) {
+			// 如果explicitArgs不为空，则构造函数的参数直接使用explicitArgs
+			// 通过getBean方法调用时，显示指定了参数，则explicitArgs就不为null
 			argsToUse = explicitArgs;
 		}
 		else {

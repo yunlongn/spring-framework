@@ -568,6 +568,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 		// <2> 使用合适的实例化策略来创建新的实例：工厂方法、构造函数自动注入、简单初始化
 		if (instanceWrapper == null) {
+			/*
+			 * 3.根据beanName、mbd、args，使用对应的策略创建Bean实例，并返回包装类BeanWrapper
+			 * 创建 bean 实例，并将实例包裹在 BeanWrapper 实现类对象中返回。
+			 * createBeanInstance中包含三种创建 bean 实例的方式：
+			 *   1. 通过工厂方法创建 bean 实例
+			 *   2. 通过构造方法自动注入（autowire by constructor）的方式创建 bean 实例
+			 *   3. 通过无参构造方法方法创建 bean 实例
+			 *
+			 * 若bean的配置信息中配置了lookup-method 和replace-method，
+			 * 则会使用CGLIB增强bean实例。
+			 * 关于lookup-method和replace-method后面再说。
+			 */
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		// 包装的实例对象
@@ -1213,6 +1225,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// <1> 如果存在 Supplier 回调，则使用给定的回调方法初始化策略
 		Supplier<?> instanceSupplier = mbd.getInstanceSupplier();
 		if (instanceSupplier != null) {
+			// 函数式变成。 使用  RootBeanDefinition 定义的实例化方法函数。相当于 定义了 () ->{} 生成这个bean实例的方法
 			return obtainFromSupplier(instanceSupplier, beanName);
 		}
 
@@ -1221,6 +1234,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
 
+		/*
+		 * resolved: 构造函数或工厂方法是否已经解析过
+		 * 多次创建同一个Bean的时候，可以用这个Shortcut，不用每次推断用那种方式构造bean
+		 * resolved和constructorArgumentsResolved会在bean第一次实例化被设置
+		 */
 		// Shortcut when re-creating the same bean...
 		boolean resolved = false;
 		boolean autowireNecessary = false;
@@ -1234,30 +1252,38 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				}
 			}
 		}
-		// 已经解析好了，直接注入即可
 		if (resolved) {
+			// 3.如果已经解析过，则使用
+			// resolvedConstructorOrFactoryMethod缓存里解析好的构造函数方法
 			// <3.1> autowire 自动注入，调用构造函数自动注入
 			if (autowireNecessary) {
 				return autowireConstructor(beanName, mbd, null, null);
 			}
 			else {
 				// <3.2> 使用默认构造函数构造
+				// 3.2 否则使用默认的构造函数进行bean的实例化
+				// 如果已经解析了构造方法的参数，则必须要通过一个带参构造方法来实例
 				return instantiateBean(beanName, mbd);
 			}
 		}
 
-		// <4> 确定解析的构造函数
-		// 主要是检查已经注册的 SmartInstantiationAwareBeanPostProcessor
+		// 4.应用后置处理器 SmartInstantiationAwareBeanPostProcessor，
+		// 拿到bean的候选构造函数
+		// 由后置处理器决定返回那些构造方法 确定解析的构造函数
 		// Candidate constructors for autowiring?
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
 		// <4.1> 有参数情况时，创建 Bean 。先利用参数个数，类型等，确定最精确匹配的构造方法。
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
+			// 5.如果ctors不为空 ||
+			// mbd的注入方式为AUTOWIRE_CONSTRUCTOR ||
+			// mdb定义了构造函数的参数值 ||
+			// args不为空，则执行构造函数自动注入
 			return autowireConstructor(beanName, mbd, ctors, args);
 		}
 
 		// Preferred constructors for default construction?
-		// <4.1> 选择构造方法，创建 Bean 。
+		// <4.1> 选择构造方法，创建 Bean
 		ctors = mbd.getPreferredConstructors();
 		if (ctors != null) {
 			return autowireConstructor(beanName, mbd, ctors, null);
