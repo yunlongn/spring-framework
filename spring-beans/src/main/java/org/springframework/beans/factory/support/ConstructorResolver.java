@@ -143,7 +143,7 @@ class ConstructorResolver {
 			argsToUse = explicitArgs;
 		}
 		else {
-			// 尝试从缓存中获取
+			// 1.2 尝试从缓存中获取已经解析过的构造函数参数
 			Object[] argsToResolve = null;
 			synchronized (mbd.constructorArgumentLock) {
 				// 缓存中的构造函数或者工厂方法
@@ -153,6 +153,9 @@ class ConstructorResolver {
 					// 缓存中的构造参数
 					argsToUse = mbd.resolvedConstructorArguments;
 					if (argsToUse == null) {
+						// 1.2.4 如果resolvedConstructorArguments为空，则从缓存中获取准备用于解析的构造函数参数，
+						// constructorArgumentsResolved为true时，resolvedConstructorArguments和
+						// preparedConstructorArguments必然有一个缓存了构造函数的参数
 						argsToResolve = mbd.preparedConstructorArguments;
 					}
 				}
@@ -204,6 +207,7 @@ class ConstructorResolver {
 			// 用于承载解析后的构造函数参数的值
 			ConstructorArgumentValues resolvedValues = null;
 
+			// 构造函数参数个数
 			int minNrOfArgs;
 			if (explicitArgs != null) {
 				minNrOfArgs = explicitArgs.length;
@@ -215,10 +219,12 @@ class ConstructorResolver {
 				// 解析构造函数的参数
 				// 将该 bean 的构造函数参数解析为 resolvedValues 对象，其中会涉及到其他 bean
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
+				// 注：这边解析mbd中的构造函数参数值，主要是处理我们通过xml方式定义的构造函数注入的参数，
+				// 但是如果我们是通过@Autowire注解直接修饰构造函数，则mbd是没有这些参数值的
 			}
 
 			// 对构造函数进行排序处理
-			// public 构造函数优先参数数量降序，非public 构造函数参数数量降序
+			// 对给定的构造函数排序：先按方法修饰符排序：public排非public前面，再按构造函数参数个数排序：参数多的排前面
 			AutowireUtils.sortConstructors(candidates);
 			// 最小参数类型权重
 			int minTypeDiffWeight = Integer.MAX_VALUE;
@@ -247,6 +253,7 @@ class ConstructorResolver {
 				ArgumentsHolder argsHolder;
 				Class<?>[] paramTypes = candidate.getParameterTypes();
 				if (resolvedValues != null) {
+					// 存在参数则根据参数值来匹配参数类型
 					try {
 						// 注释上获取参数名称
 						String[] paramNames = ConstructorPropertiesChecker.evaluate(candidate, parameterCount);
