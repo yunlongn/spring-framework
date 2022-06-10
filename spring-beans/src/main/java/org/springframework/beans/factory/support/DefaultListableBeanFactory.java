@@ -764,9 +764,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			throws NoSuchBeanDefinitionException {
 
 		String bdName = BeanFactoryUtils.transformedBeanName(beanName);
+		// 检查bean定义Map是否有这个名字的bean
 		if (containsBeanDefinition(bdName)) {
 			return isAutowireCandidate(beanName, getMergedLocalBeanDefinition(bdName), descriptor, resolver);
 		}
+		// 检查 一级缓存中 是否有这个名字的bean
 		else if (containsSingleton(beanName)) {
 			return isAutowireCandidate(beanName, new RootBeanDefinition(getType(beanName)), descriptor, resolver);
 		}
@@ -1404,6 +1406,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		Class<?> type = descriptor.getDependencyType();
 
+		//对于数组、Collection、Map，spring是分开处理的，但是大致逻辑都十分详细
+		//可以看到不管是那种类型，对bean的搜寻都是放在了findAutowireCandidates函数中
 		if (descriptor instanceof StreamDependencyDescriptor) {
 			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
 			if (autowiredBeanNames != null) {
@@ -1651,18 +1655,27 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	@Nullable
 	protected String determineAutowireCandidate(Map<String, Object> candidates, DependencyDescriptor descriptor) {
 		Class<?> requiredType = descriptor.getDependencyType();
+		// 1.根据@Primary注解来选择最优解
 		String primaryCandidate = determinePrimaryCandidate(candidates, requiredType);
 		if (primaryCandidate != null) {
 			return primaryCandidate;
 		}
+		// 2.根据@Priority注解来选择最优解
 		String priorityCandidate = determineHighestPriorityCandidate(candidates, requiredType);
 		if (priorityCandidate != null) {
 			return priorityCandidate;
 		}
 		// Fallback
+		// 3.如果通过以上两步都不能选择出最优解，则使用最基本的策略
 		for (Map.Entry<String, Object> entry : candidates.entrySet()) {
 			String candidateName = entry.getKey();
 			Object beanInstance = entry.getValue();
+			/* 3.1 containsValue：首先如果这个beanInstance已经由Spring注册过依赖关系，
+			 * 则直接使用该beanInstance作为最优解，
+			 * 3.2 matchesBeanName：如果没有注册过此beanInstance的依赖关系，
+			 * 则根据参数名称来匹配，
+			 * 如果参数名称和某个候选者的beanName或别名一致，那么直接将此bean作为最优解
+			 */
 			if ((beanInstance != null && this.resolvableDependencies.containsValue(beanInstance)) ||
 					matchesBeanName(candidateName, descriptor.getDependencyName())) {
 				return candidateName;
@@ -1682,26 +1695,51 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	@Nullable
 	protected String determinePrimaryCandidate(Map<String, Object> candidates, Class<?> requiredType) {
 		String primaryBeanName = null;
+		// 1.遍历所有候选者
 		for (Map.Entry<String, Object> entry : candidates.entrySet()) {
 			String candidateBeanName = entry.getKey();
 			Object beanInstance = entry.getValue();
+			// 2.判断候选者bean是否使用了@Primary注解：
+			// 如果candidateBeanName在当前BeanFactory中存在BeanDefinition，
+			// 则判断当前BeanFactory中的BeanDefinition是否使用@Primary修饰；
+			// 否则，在parentBeanFactory中判断
 			if (isPrimary(candidateBeanName, beanInstance)) {
 				if (primaryBeanName != null) {
+					// 3.走到这边primaryBeanName不为null，
+					// 代表标识了@Primary的候选者不止一个，
+					// 则判断BeanName是否存在于当前BeanFactory
+					// candidateLocal：candidateBeanName
+					// 是否在当前BeanFactory的beanDefinitionMap缓存中
 					boolean candidateLocal = containsBeanDefinition(candidateBeanName);
+					// primaryLocal：primaryBeanName是否在当前
+					// BeanFactory的beanDefinitionMap缓存中
 					boolean primaryLocal = containsBeanDefinition(primaryBeanName);
 					if (candidateLocal && primaryLocal) {
+						// 3.1 如果当前BeanFactory中同一个类型的多个Bean，
+						// 不止一个Bean使用@Primary注解，则抛出异常
 						throw new NoUniqueBeanDefinitionException(requiredType, candidates.size(),
 								"more than one 'primary' bean found among candidates: " + candidates.keySet());
 					}
 					else if (candidateLocal) {
+						// 3.2 candidateLocal为true，primaryLocal为false，
+						// 则代表primaryBeanName是parentBeanFactory中的Bean，
+						// candidateBeanName是当前BeanFactory中的Bean，
+						// 当存在两个都使用@Primary注解的Bean，优先使用当前BeanFactory中的
 						primaryBeanName = candidateBeanName;
 					}
+					// 3.3 candidateLocal为false，primaryLocal为true，
+					// 则代表primaryBeanName是当前BeanFactory中的Bean，
+					// candidateBeanName是parentBeanFactory中的Bean，
+					// 因此无需修改primaryBeanName的值
 				}
 				else {
+					// 4.primaryBeanName还为空，代表是第一个符合的候选者，
+					// 直接将primaryBeanName赋值为candidateBeanName
 					primaryBeanName = candidateBeanName;
 				}
 			}
 		}
+		// 5.返回唯一的使用@Primary注解的Bean的beanName（如果都没使用@Primary注解则返回null）
 		return primaryBeanName;
 	}
 
