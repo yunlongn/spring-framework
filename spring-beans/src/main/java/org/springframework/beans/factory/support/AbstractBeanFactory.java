@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -377,7 +377,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					// 获得 scopeName 对应的 Scope 对象
 					String scopeName = mbd.getScope();
 					if (!StringUtils.hasLength(scopeName)) {
-						throw new IllegalStateException("No scope name defined for bean ´" + beanName + "'");
+						throw new IllegalStateException("No scope name defined for bean '" + beanName + "'");
 					}
 					Scope scope = this.scopes.get(scopeName);
 					if (scope == null) {

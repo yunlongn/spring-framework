@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -231,7 +231,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	private boolean webApplicationContextInjected = false;
 
 	/** Flag used to detect whether onRefresh has already been called. */
-	private volatile boolean refreshEventReceived = false;
+	private volatile boolean refreshEventReceived;
 
 	/** Monitor for synchronized onRefresh execution. */
 	private final Object onRefreshMonitor = new Object();
@@ -1145,8 +1145,8 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			return;
 		}
 
-		String dispatchType = request.getDispatcherType().name();
-		boolean initialDispatch = request.getDispatcherType().equals(DispatcherType.REQUEST);
+		DispatcherType dispatchType = request.getDispatcherType();
+		boolean initialDispatch = (dispatchType == DispatcherType.REQUEST);
 
 		if (failureCause != null) {
 			if (!initialDispatch) {
@@ -1170,7 +1170,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		}
 
 		int status = response.getStatus();
-		String headers = ""; // nothing below trace
+		String headers = "";  // nothing below trace
 
 		if (logger.isTraceEnabled()) {
 			Collection<String> names = response.getHeaderNames();

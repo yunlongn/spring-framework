@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ class ComponentScanAnnotationParser {
 	}
 
 
-	public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final String declaringClass) {
+	public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, String declaringClass) {
 		// 创建 ClassPathBeanDefinitionScanner
 		// 在 AnnotationConfigApplicationContext 的构造器中也创建了一个ClassPathBeanDefinitionScanner
 		// 这里证明了,执行扫描 scanner 不是构造器中的,而是这里创建的
@@ -121,9 +121,6 @@ class ComponentScanAnnotationParser {
 					ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
 			Collections.addAll(basePackages, tokenized);
 		}
-		// @ComponentScan(basePackageClasses = Xx.class)
-		// 可以指定basePackageClasses, 只要是与是这几个类所在包及其子包,就可以被Spring扫描
-		// 经常会用一个空的类来作为basePackageClasses,默认取当前配置类所在包及其子包
 		for (Class<?> clazz : componentScan.getClassArray("basePackageClasses")) {
 			basePackages.add(ClassUtils.getPackageName(clazz));
 		}
@@ -137,7 +134,6 @@ class ComponentScanAnnotationParser {
 				return declaringClass.equals(className);
 			}
 		});
-		//执行扫描
 		return scanner.doScan(StringUtils.toStringArray(basePackages));
 	}
 
