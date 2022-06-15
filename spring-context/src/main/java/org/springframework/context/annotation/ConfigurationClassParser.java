@@ -228,7 +228,7 @@ class ConfigurationClassParser {
 	 * 解析的最后会将当前配置类放到configurationClasses
 	 */
 	protected void processConfigurationClass(ConfigurationClass configClass, Predicate<String> filter) throws IOException {
-		/**
+		/*
 		 * 根据@Conditional条件判断是否跳过配置类
 		 * 注意：当前这个PARSE_CONFIGURATION解析配置阶段只会使用这个阶段的@Conditional条件，有些REGISTER_BEAN注册beanDefinition阶段的条件不会在此时使用
 		 */
@@ -255,13 +255,12 @@ class ConfigurationClassParser {
 				this.knownSuperclasses.values().removeIf(configClass::equals);
 			}
 		}
-		/**
+		/*
 		 * 递归处理配置类及其超类层次结构
 		 * 从当前配置类configClass开始向上沿着类继承结构逐层执行doProcessConfigurationClass，直到遇到的父类是由Java提供的类结束循环
 		 */
-		// Recursively process the configuration class and its superclass hierarchy.
 		SourceClass sourceClass = asSourceClass(configClass, filter);
-		/**
+		/*
 		 * 循环处理配置类configClass直到sourceClass变为null，即父类为null
 		 * doProcessConfigurationClass的返回值是其参数configClass的父类
 		 * 如果该父类是由Java提供的类或者已经处理过，返回null
@@ -290,8 +289,11 @@ class ConfigurationClassParser {
 
 		// @Configuration 继承了 @Component
 		if (configClass.getMetadata().isAnnotated(Component.class.getName())) {
-			// Recursively process any member (nested) classes first
-			// 递归处理内部类
+			/*
+			 * 1、处理配置类的成员类(配置类内嵌套定义的类)
+			 * 内部嵌套类也可能是配置类，遍历这些成员类，检查是否为"完全/简化配置类"
+			 * 有的话，调用processConfigurationClass()处理它们，最终将配置类放入configurationClasses集合
+			 */
 			processMemberClasses(configClass, sourceClass, filter);
 		}
 
@@ -485,31 +487,41 @@ class ConfigurationClassParser {
 
 
 	/**
+	 * 处理每一个属性源，最终加入到环境上下文里面去~
 	 * Process the given <code>@PropertySource</code> annotation metadata.
 	 * @param propertySource metadata for the <code>@PropertySource</code> annotation found
 	 * @throws IOException if loading a property source failed
 	 */
 	private void processPropertySource(AnnotationAttributes propertySource) throws IOException {
+		// 获取 propertySource 注解 name的值
 		String name = propertySource.getString("name");
 		if (!StringUtils.hasLength(name)) {
 			name = null;
 		}
+		// 获取 propertySource 注解 encoding 的编码
 		String encoding = propertySource.getString("encoding");
 		if (!StringUtils.hasLength(encoding)) {
 			encoding = null;
 		}
+		// 获取 propertySource 注解 value 的值
 		String[] locations = propertySource.getStringArray("value");
 		Assert.isTrue(locations.length > 0, "At least one @PropertySource(value) location is required");
+		// 获取 ignoreResourceNotFound 注解 ignoreResourceNotFound 的值 默认：false
 		boolean ignoreResourceNotFound = propertySource.getBoolean("ignoreResourceNotFound");
 
+		// 获取 ignoreResourceNotFound 注解 factory 的值 默认：PropertySourceFactory.class
 		Class<? extends PropertySourceFactory> factoryClass = propertySource.getClass("factory");
 		PropertySourceFactory factory = (factoryClass == PropertySourceFactory.class ?
 				DEFAULT_PROPERTY_SOURCE_FACTORY : BeanUtils.instantiateClass(factoryClass));
 
+		// 遍历位置路径
 		for (String location : locations) {
 			try {
+				// 根据环境解析路径
 				String resolvedLocation = this.environment.resolveRequiredPlaceholders(location);
+				// 处理好占位符后，获取资源
 				Resource resource = this.resourceLoader.getResource(resolvedLocation);
+				// 添加属性源
 				addPropertySource(factory.createPropertySource(name, new EncodedResource(resource, encoding)));
 			}
 			catch (IllegalArgumentException | FileNotFoundException | UnknownHostException | SocketException ex) {
@@ -527,38 +539,57 @@ class ConfigurationClassParser {
 	}
 
 	private void addPropertySource(PropertySource<?> propertySource) {
+		// 从环境里把MutablePropertySources拿出来，准备向里面添加
 		String name = propertySource.getName();
+		// 判断解析器中的属性源名单是否包含 此属性源
+
+		// 这里有个暖心的处理：若出现同名的配置文件，它会两个都保存着，联合形成一个CompositePropertySource  这样它哥俩就都会生效了
+		// 否则MutablePropertySources 的Map里面的name是不能同名的，我觉得这个做法还是很暖心的
 		MutablePropertySources propertySources = ((ConfigurableEnvironment) this.environment).getPropertySources();
 
 		if (this.propertySourceNames.contains(name)) {
 			// We've already added a version, we need to extend it
+			// 我们已经添加了一个版本，我们需要扩展它 如果这个资源已经存在
 			PropertySource<?> existing = propertySources.get(name);
+			// 是否已经存在相同名的属性源
 			if (existing != null) {
+				// 根据属性源 是否是 资源属性源 ，获取一个新源
 				PropertySource<?> newSource = (propertySource instanceof ResourcePropertySource ?
 						((ResourcePropertySource) propertySource).withResourceName() : propertySource);
+				// 已经存在的属性源，是否属于 组合属性源
 				if (existing instanceof CompositePropertySource) {
+					// 属于组合属性源 添加到集合第一位
 					((CompositePropertySource) existing).addFirstPropertySource(newSource);
 				}
 				else {
 					if (existing instanceof ResourcePropertySource) {
 						existing = ((ResourcePropertySource) existing).withResourceName();
 					}
+					// 创建一个组合属性源
 					CompositePropertySource composite = new CompositePropertySource(name);
+					// 后添加的反而在最上面的~~~ 已经存在会被挤下来一个位置
 					composite.addPropertySource(newSource);
 					composite.addPropertySource(existing);
+					// 把已经存在的这个name替换成composite组合的
 					propertySources.replace(name, composite);
 				}
 				return;
 			}
 		}
 
+		// 解析器属性源名单为空
 		if (this.propertySourceNames.isEmpty()) {
+			// 添加到环境属性源集中
 			propertySources.addLast(propertySource);
 		}
 		else {
+			// 若你不是第一个，那就把你放在已经导入过的最后一个的前一个里面
+			// 获取名单最后一个
 			String firstProcessed = this.propertySourceNames.get(this.propertySourceNames.size() - 1);
+			// 在最后一个前面插入
 			propertySources.addBefore(firstProcessed, propertySource);
 		}
+		// 添加到解析器属性源名单中
 		this.propertySourceNames.add(name);
 	}
 

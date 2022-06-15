@@ -273,15 +273,36 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		for (String basePackage : basePackages) {
+			/*
+			 * 扫描basePackage路径下的java文件
+			 * 先全部转为Resource,然后再判断拿出符合条件的bd 通过包下的所有文件进行转换。判断是否符合 beanDefinition
+			 */
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
 			for (BeanDefinition candidate : candidates) {
+				/*
+				 * 解析scope属性
+				 */
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
 				candidate.setScope(scopeMetadata.getScopeName());
+				/*
+				 * 获取beanName
+				 * 先判断注解上有没有显示设置beanName
+				 * 没有的话，就以类名小写为beanName
+				 */
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
 				if (candidate instanceof AbstractBeanDefinition) {
+					/*
+					 * 如果这个类是AbstractBeanDefinition类型
+					 * 则为他设置默认值，比如lazy/init/destroy
+					 * 通过扫描出来的bd是ScannedGenericBeanDefinition，实现了AbstractBeanDefinition
+					 */
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}
 				if (candidate instanceof AnnotatedBeanDefinition) {
+					/*
+					 * 处理加了注解的类
+					 * 把常用注解设置到AnnotationBeanDefinition中
+					 */
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
 				}
 				if (checkCandidate(beanName, candidate)) {

@@ -416,8 +416,16 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
 		Set<BeanDefinition> candidates = new LinkedHashSet<>();
 		try {
+			/*
+			 * 扫描classpath*:下的.class文件
+			 * 将class文件转换为resources
+			 * 循环resource，转换为ScannedGenericBeanDefinition
+			 */
 			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
+			/*
+			 * asm读取class文件
+			 */
 			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
 			boolean traceEnabled = logger.isTraceEnabled();
 			boolean debugEnabled = logger.isDebugEnabled();
@@ -426,14 +434,22 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 					logger.trace("Scanning " + resource);
 				}
 				try {
+					//获取.class对应的元信息，例如注解信息等
 					MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+					/*
+					 * 判断excludeFilters与includeFilters
+					 * includeFilters在new ClassPathBeanDefinitionScanner时就默认添加了@Component等元注解
+					 * 根据注解元信息判断是不是符合条件的.class
+					 */
 					if (isCandidateComponent(metadataReader)) {
 						ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 						sbd.setSource(resource);
+						//判断能否实例化
 						if (isCandidateComponent(sbd)) {
 							if (debugEnabled) {
 								logger.debug("Identified candidate component class: " + resource);
 							}
+							//添加到候选BeanDefinition
 							candidates.add(sbd);
 						}
 						else {

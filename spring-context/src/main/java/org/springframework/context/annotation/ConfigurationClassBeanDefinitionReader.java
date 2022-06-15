@@ -123,11 +123,18 @@ class ConfigurationClassBeanDefinitionReader {
 	/**
 	 * Read a particular {@link ConfigurationClass}, registering bean definitions
 	 * for the class itself and all of its {@link Bean} methods.
+	 * 读取特定配置类，根据配置信息注册bean definitions
 	 */
 	private void loadBeanDefinitionsForConfigurationClass(
 			ConfigurationClass configClass, TrackedConditionEvaluator trackedConditionEvaluator) {
-		// 如果要 skip，那么当前配置类即使在 ComponentScanParser 中被保存到了 BeanDefinitionRegistry 也要移除掉
-		// skip 的条件是有 @Conditional 注解，且不满足 Condition 的条件
+
+		/*
+		 * 根据ConfigurationPhase.REGISTER_BEAN阶段条件判断配置类是否需要跳过
+		 * 循环判断配置类以及导入配置类的类，使用ConfigurationPhase.REGISTER_BEAN阶段条件判断是否需要跳过
+		 * 只要配置类或导入配置类的类需要跳过即返回跳过
+		 * 如果要 skip，那么当前配置类即使在 ComponentScanParser 中被保存到了 BeanDefinitionRegistry 也要移除掉
+		 * skip 的条件是有 @Conditional 注解，且不满足 Condition 的条件3
+		 */
 		if (trackedConditionEvaluator.shouldSkip(configClass)) {
 			String beanName = configClass.getBeanName();
 			if (StringUtils.hasLength(beanName) && this.registry.containsBeanDefinition(beanName)) {
@@ -137,14 +144,19 @@ class ConfigurationClassBeanDefinitionReader {
 			return;
 		}
 
+		// 1、如果当前配置类是通过内部类导入 或 @Import导入，将配置类自身注册为beanDefinition
 		if (configClass.isImported()) {
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
+		// 2、注册配置类所有@Bean方法为beanDefinition
 		for (BeanMethod beanMethod : configClass.getBeanMethods()) {
 			loadBeanDefinitionsForBeanMethod(beanMethod);
 		}
 
+		// 3、注册由@ImportedResources来的beanDefinition
+		// 即通过其它类型Resource的BeanDefinitionReader读取BeanDefinition并注册
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+		// 4、注册由ImportBeanDefinitionRegistrars来的beanDefinition
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 
